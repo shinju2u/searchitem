@@ -1,80 +1,59 @@
 import { StatusBar } from 'expo-status-bar';
-import React,{useState} from 'react';
+import React,{useState,useEffect,memo} from 'react';
 import { StyleSheet, Text, View,TextInput,TouchableOpacity } from 'react-native';
 import { Feather } from 'react-native-vector-icons';
 import { Table, Row, Rows } from 'react-native-table-component';
-import fetchDataFromGoogleSheets from './fetchDataFromGoogleSheets';
+import fetchDataFromGoogleSheets  from './fetchDataFromGoogleSheets';
 
 
-const tableHead = ["Name","quantity","price"]
-const mockData = ['Book', 'pen', 'Bottle'];
 
- const searchFunction = (searchTerm) => { 
 
+
+export default function App() {
+  const [searchTerm, setSearchTerm] = useState(''); 
+  const [table, setTable] = useState([]);
+  const [tableHead, setTableHead] = useState([]);
+  const [matchedItem, setMatchedItem] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchDataFromGoogleSheets();
+        console.log('Data from Google Sheets:', data);       
+        setTable(data)      
+        // For example, set the first array as tableHead
+        setTableHead(data[0]);   
+
+        
+      } catch (error) {
+        console.error('Error in processing data:', error);
+      }
+    };
+    fetchData(); // Call the fetchData function when the component mounts
+  }, []); // The empty dependency array ensures that useEffect runs only once on mount
+
+
+ 
+function handleSearch(searchTerm) {
   if (!searchTerm.trim()) {
-    // If the search term is empty or contains only whitespace, return an empty array
-    return [];
+    setMatchedItem(null);
+    return;
   }
 
-  const filteredData = mockData.filter(item =>
-    item.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const foundItem = table.slice(1).find((item) => item[1] === searchTerm);
+  setMatchedItem(foundItem);
+}
 
-  return filteredData;
-};
-
-export default function App() {
-  const [searchTerm, setSearchTerm] = useState(''); 
-
-
-
-
-  // const handleSearch = async () => {
-  //   try {
-  //     // Retrieve the access token from Google Sign-In (you need to implement this)
-  //     const accessToken = await getGoogleSignInAccessToken();
-
-  //     // Fetch data from Google Sheets
-  //     const data = await fetchDataFromGoogleSheets(accessToken);
-
-  //     // Implement your search logic here
-  //     const results = data.filter(item =>
-  //       item.toLowerCase().includes(searchTerm.toLowerCase())
-  //     );
-
-  //     setSearchResults(results);
-  //   } catch (error) {
-  //     console.error('Error during search:', error);
-  //   }
-  // };
-
-
-
-  const SearchComponent = () => {
-    const searchResults=searchFunction(searchTerm)
-
-    const tableData = searchResults.map(item => [item]);
-    
-    return (
-      <View style={styles.container}>
-      <Table borderStyle={{ borderWidth: 2, borderColor: '#c8e1ff' }}>
-        <Row data={tableHead} style={styles.head} textStyle={styles.headertext} />
-        <Rows data={tableData} textStyle={styles.itemtext} />
-      </Table>
-    </View>
-    );
-  };
-
+  useEffect(() => {
+    handleSearch(searchTerm);
+  }, [searchTerm]);
 
  return (
   
     <View style={styles.container}>
      <View style={styles.searchContainer}>
-      <Feather
-       name = "search"
-       size= {20}
-       color ="black"
-       style = {{marginLeft:1 , marginRight: 4}}/>      
+          <Feather name="search" size={20} color="black" style={{ marginLeft: 1, marginRight: 4 }} />
+     
       
       <TextInput
         style={styles.textInput}
@@ -84,9 +63,14 @@ export default function App() {
       />
       </View>
 
-      <View>
-        <SearchComponent />
-      </View>
+      <View style={styles.container}>
+      {matchedItem && (
+  <Table borderStyle={{ borderWidth: 2, borderColor: '#c8e1ff' }}>
+    <Row data={tableHead} style={styles.head} textStyle={styles.headertext} />
+    <Rows data={[matchedItem]} textStyle={styles.itemtext} />
+  </Table>
+)}
+    </View>
 
       <StatusBar style="auto" />
     </View>
